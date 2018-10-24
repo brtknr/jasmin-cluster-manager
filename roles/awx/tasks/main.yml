@@ -1,0 +1,80 @@
+---
+
+- name: Install yum dependencies
+  yum:
+    name:
+      - git
+      - ansible
+      - docker
+      - python-docker-py
+
+- name: Ensure docker is started
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Clone AWX repository
+  git:
+    repo: https://github.com/ansible/awx.git
+    dest: /opt/awx
+    version: "{{ awx_git_version }}"
+
+- name: Make facts.d directory
+  file:
+    path: /etc/ansible/facts.d
+    state: directory
+
+- name: Create AWX facts.d files
+  shell: echo "\"$(cat /dev/urandom | tr -dc '[:alnum:]' | head -c 40)\"" > /etc/ansible/facts.d/{{ item }}.fact
+  args:
+    creates: /etc/ansible/facts.d/{{ item }}.fact
+  with_items:
+    - awx_postgres_password
+    - awx_rabbitmq_password
+    - awx_secret_key
+  register: awx_facts
+
+- name: Make facts.d files accessible by root only
+  file:
+    path: /etc/ansible/facts.d/{{ item }}.fact
+    mode: "u=rw,g=,o="
+  with_items:
+    - awx_postgres_password
+    - awx_rabbitmq_password
+    - awx_secret_key
+
+- name: Reload facts
+  setup:
+  when: awx_facts is changed
+
+- name: Install inventory file
+  template:
+    src: templates/awx_inventory
+    dest: /root/awx_inventory
+    mode: "u=r,g=,o="
+
+- name: Run AWX installer
+  command: ansible-playbook -i /root/awx_inventory install.yml
+  args:
+    chdir: /opt/awx/installer
+
+- name: Install pip for system Python
+  yum:
+    name: python-pip
+    state: latest
+
+- name: Install Tower CLI
+  pip:
+    name: ansible-tower-cli
+    state: latest
+
+- name: Set Tower CLI config options
+  command: tower-cli config {{ item.name }} {{ item.value | quote }}
+  with_items:
+    - name: username
+      value: admin
+    - name: password
+      value: "{{ awx_admin_password }}"
+  loop_control:
+    label: "{{ item.name }}"
