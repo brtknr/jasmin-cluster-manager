@@ -27,7 +27,7 @@
 - name: Generate self-signed SSL certificate
   command: >
     openssl req -new -nodes -x509 -days 3650 -extensions v3_ca
-      -subj "/C=GB/ST=Development/CN=AWX"
+      -subj "/C=GB/ST=Oxfordshire/L=Didcot/O=JASMIN/OU=Cluster-as-a-Service/CN=*"
       -keyout /etc/nginx/ssl/awx.key
       -out /etc/nginx/ssl/awx.crt
   args:

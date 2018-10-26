@@ -18,7 +18,23 @@
   git:
     repo: https://github.com/ansible/awx.git
     dest: /opt/awx
-    version: "{{ awx_git_version }}"
+
+- name: Fetch Git tags
+  command: git fetch --tags
+  args:
+    chdir: /opt/awx
+
+- name: Get latest tag
+  shell: git describe --tags $(git rev-list --tags --max-count=1)
+  args:
+    chdir: /opt/awx
+  register: awx_latest_tag
+
+- name: Checkout latest tag
+  git:
+    repo: https://github.com/ansible/awx.git
+    dest: /opt/awx
+    version: "{{ awx_latest_tag.stdout }}"
 
 - name: Make facts.d directory
   file:
