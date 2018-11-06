@@ -13,6 +13,11 @@
       retries: 120
       delay: 5
 
+    - name: Create Cluster-as-a-Service organisation
+      tower_organization:
+        name: "Cluster-as-a-Service"
+        tower_verify_ssl: no
+
     - name: Install Cluster-as-a-Service projects
       tower_project:
         name: "{{ item.name }}"
