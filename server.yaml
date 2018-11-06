@@ -80,7 +80,6 @@ resources:
           template: |
             #!/bin/bash
             {
-              set -x
               # Trap any errors and mark the wait handle as failed
               function notify_error {
                 wc_notify --data-binary '{"status": "FAILURE"}'
@@ -91,9 +90,7 @@ resources:
               yum install -y git ansible
               git clone https://github.com/cedadev/jasmin-cluster-manager.git /opt/jasmin-cluster-manager
               ansible-galaxy install -f -r /opt/jasmin-cluster-manager/roles/requirements.yml
-              ansible-playbook install  \
-                -i "127.0.0.1,"  \
-                -c local  \
+              ansible-playbook -i "127.0.0.1," -c local  \
                 -e "awx_admin_password=$awx_admin_password"  \
                 /opt/jasmin-cluster-manager/playbook.yml
               wc_notify --data-binary '{"status": "SUCCESS"}'

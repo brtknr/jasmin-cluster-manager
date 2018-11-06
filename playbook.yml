@@ -13,19 +13,6 @@
       retries: 120
       delay: 5
 
-    # We use the tower-cli manually here, even though Ansible has lots of tower_*
-    # modules, because the modules don't allow deletion by type and name only
-    - name: Remove demo artifacts
-      shell: |
-        set -e
-        artifact="$(tower-cli {{ item.type }} list -Q name {{ item.name | quote }} -f id)"
-        if [ -n "$artifact" ]; then tower-cli {{ item.type }} delete "$artifact"; fi
-      with_items:
-        - { type: job_template, name: "Demo Job Template" }
-        - { type: inventory, name: "Demo Inventory" }
-        - { type: project, name: "Demo Project" }
-        - { type: credential, name: "Demo Credential" }
-
     - name: Install Cluster-as-a-Service projects
       tower_project:
         name: "{{ item.name }}"
