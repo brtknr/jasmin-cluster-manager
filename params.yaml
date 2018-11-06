@@ -1,0 +1,5 @@
+parameters:
+  key_name: mpryor-4f0b0434703f34080e04627d3f9c8eb2
+  floating_ip: 8723c186-d15f-44d5-9421-e12bf2a03325
+  flavor: j1.small
+  network: caastest-U-internal
