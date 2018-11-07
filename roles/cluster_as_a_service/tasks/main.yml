@@ -1,0 +1,37 @@
+---
+
+- name: Ensure Tower API is available
+  command: tower-cli version
+  register: tower_cli_version
+  until: tower_cli_version is succeeded
+  retries: 120
+  delay: 5
+
+# We use the tower-cli manually here, even though Ansible has lots of tower_*
+# modules, because the modules don't allow deletion by type and name only
+- name: Remove demo artifacts
+  shell: |
+    set -e
+    artifact="$(tower-cli {{ item.type }} list -Q name {{ item.name | quote }} -f id)"
+    if [ -n "$artifact" ]; then tower-cli {{ item.type }} delete "$artifact"; fi
+  with_items:
+    - { type: job_template, name: "Demo Job Template" }
+    - { type: inventory, name: "Demo Inventory" }
+    - { type: project, name: "Demo Project" }
+    - { type: credential, name: "Demo Credential" }
+    - { type: organization, name: "Default" }
+
+- name: Create Cluster-as-a-Service organisation
+  tower_organization:
+    name: "Cluster-as-a-Service"
+    tower_verify_ssl: no
+
+- name: Create Cluster-as-a-Service job templates
+  include_tasks: create_job_template.yml
+  with_items:
+    - name: Kubernetes
+      description: "Deployment, scaling and maintenance of Kubernetes clusters."
+      git_url: https://github.com/cedadev/k8s-ansible.git
+      playbook: cluster_openstack.yml
+  loop_control:
+    loop_var: job_template
