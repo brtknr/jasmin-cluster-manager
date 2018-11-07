@@ -11,15 +11,13 @@
     tower_verify_ssl: no
 
 - name: "Create job template: {{ job_template.name }}"
-  block:
-    - name: Create job template
-      tower_job_template:
-        name: "{{ job_template.name }}"
-        job_type: run
-        project: "{{ job_template.name }}"
-        playbook: "{{ job_template.playbook }}"
-        # Ask for OpenStack credential
-        ask_credential: yes
-        # Ask for the inventory
-        ask_inventory: yes
-        tower_verify_ssl: no
+  tower_job_template:
+    name: "{{ job_template.name }}"
+    job_type: run
+    project: "{{ job_template.name }}"
+    playbook: "{{ job_template.playbook }}"
+    # Ask for OpenStack credential
+    ask_credential: yes
+    # Ask for the inventory
+    ask_inventory: yes
+    tower_verify_ssl: no
