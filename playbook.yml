@@ -13,13 +13,28 @@
       retries: 120
       delay: 5
 
+    # We use the tower-cli manually here, even though Ansible has lots of tower_*
+    # modules, because the modules don't allow deletion by type and name only
+    - name: Remove demo artifacts
+      shell: |
+        set -e
+        artifact="$(tower-cli {{ item.type }} list -Q name {{ item.name | quote }} -f id)"
+        if [ -n "$artifact" ]; then tower-cli {{ item.type }} delete "$artifact"; fi
+      with_items:
+        - { type: job_template, name: "Demo Job Template" }
+        - { type: inventory, name: "Demo Inventory" }
+        - { type: project, name: "Demo Project" }
+        - { type: credential, name: "Demo Credential" }
+        - { type: organization, name: "Default" }
+
     - name: Create Cluster-as-a-Service organisation
       tower_organization:
         name: "Cluster-as-a-Service"
         tower_verify_ssl: no
 
-    - name: Install Cluster-as-a-Service projects
+    - name: Create Cluster-as-a-Service projects
       tower_project:
+        organization: "Cluster-as-a-Service"
         name: "{{ item.name }}"
         description: "{{ item.description }}"
         scm_type: git
@@ -30,3 +45,21 @@
         - name: Kubernetes
           description: "Playbooks for installing and maintaining Kubernetes clusters"
           git_url: https://github.com/cedadev/k8s-ansible.git
+
+    - name: Create Cluster-as-a-Service job templates
+      block:
+        - name: Create job template
+          tower_job_template:
+            name: "{{ item.name }}"
+            job_type: run
+            project: "{{ item.project }}"
+            playbook: "{{ item.playbook }}"
+            # Ask for OpenStack credential
+            ask_credential: yes
+            # Ask for the inventory
+            ask_inventory: yes
+            tower_verify_ssl: no
+      with_items:
+        - name: Kubernetes
+          project: "Kubernetes"
+          playbook: "cluster_openstack.yml"
