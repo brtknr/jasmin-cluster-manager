@@ -7,7 +7,9 @@
     description: "{{ cluster_type.description }}"
     scm_type: git
     scm_url: "{{ cluster_type.git_url }}"
-    state: present
+    # Each time a job runs using this project, make sure the
+    # playbook is at the latest version
+    scm_update_on_launch: yes
     tower_verify_ssl: no
   register: tower_project
 
