@@ -1,5 +1,10 @@
 ---
 
+- name: Install jq
+  yum:
+    name: jq
+    state: latest
+
 - name: Ensure Tower API is available
   command: tower-cli version
   register: tower_cli_version
@@ -33,5 +38,27 @@
       description: "Deployment, scaling and maintenance of Kubernetes clusters."
       git_url: https://github.com/cedadev/k8s-ansible.git
       playbook: cluster_openstack.yml
+      survey_spec:
+        - question_name: "Upgrade system packages?"
+          question_description: >
+            If yes, system packages will be upgraded (including patch versions of Kubernetes).
+          variable: "upgrade_packages"
+          type: "multiplechoice"
+          choices: |
+            yes
+            no
+          default: "no"
+          required: true
+        - question_name: "Upgrade Kubernetes?"
+          question_description: >
+            If yes, Kubernetes will be upgraded to the latest version.
+            System packages will be necessarily upgraded.
+          variable: "upgrade_kubernetes"
+          type: "multiplechoice"
+          choices: |
+            yes
+            no
+          default: "no"
+          required: true
   loop_control:
     loop_var: job_template
