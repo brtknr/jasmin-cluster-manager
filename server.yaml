@@ -92,11 +92,17 @@ resources:
               ansible-galaxy install -f -r /opt/jasmin-cluster-manager/roles/requirements.yml
               ansible-playbook -i "127.0.0.1," -c local  \
                 -e "awx_admin_password=$awx_admin_password"  \
+                -e "default_cluster_network=$cluster_network"  \
+                -e "default_cluster_keypair=$cluster_keypair"  \
+                -e "openstack_project_id=$project_id"  \
                 /opt/jasmin-cluster-manager/playbook.yml
               wc_notify --data-binary '{"status": "SUCCESS"}'
             } 2>&1 | tee /var/log/jasmin-cluster-manager.log
           params:
             $awx_admin_password: { get_attr: [awx_admin_password, value] }
+            $cluster_network: { get_param: network }
+            $cluster_keypair: { get_param: key_name }
+            $project_id: { get_param: "OS::project_id" }
             wc_notify: { get_attr: [wait_handle, curl_cli] }
 
   fip_assoc:

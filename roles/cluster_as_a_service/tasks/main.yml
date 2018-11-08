@@ -26,13 +26,36 @@
     - { type: credential, name: "Demo Credential" }
     - { type: organization, name: "Default" }
 
+- name: Create JASMIN Tenancy User credential type
+  tower_credential_type:
+    name: "JASMIN Tenancy User"
+    kind: cloud
+    inputs:
+      fields:
+        - id: username
+          label: JASMIN Username
+        - id: password
+          label: JASMIN Password
+          secret: true
+      required: [username, password]
+    injectors:
+      env:
+        OS_AUTH_URL: "{{ openstack_auth_url }}"
+        OS_IDENTITY_API_VERSION: "{{ openstack_identity_api_version }}"
+        OS_PROJECT_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
+        OS_USER_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
+        OS_PROJECT_ID: "{{ openstack_project_id }}"
+        OS_USERNAME: "{{ '{{' }} username {{ '}}' }}"
+        OS_PASSWORD: "{{ '{{' }} password {{ '}}' }}"
+    tower_verify_ssl: no
+
 - name: Create Cluster-as-a-Service organisation
   tower_organization:
     name: "Cluster-as-a-Service"
     tower_verify_ssl: no
 
-- name: Create Cluster-as-a-Service job templates
-  include_tasks: create_job_template.yml
+- name: Create Cluster-as-a-Service resources
+  include_tasks: create_cluster_resources.yml
   with_items:
     - name: Kubernetes
       description: "Deployment, scaling and maintenance of Kubernetes clusters."
@@ -60,5 +83,13 @@
             no
           default: "no"
           required: true
+      inventory_defaults:
+        cluster_name: kubernetes
+        cluster_network: "{{ default_cluster_network }}"
+        cluster_keypair: "{{ default_cluster_keypair }}"
+        master_flavor: j3.medium
+        worker_flavor: j3.medium
+        num_workers: 3
+        root_volume_size: 40
   loop_control:
-    loop_var: job_template
+    loop_var: cluster_type

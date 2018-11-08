@@ -1,0 +1,59 @@
+---
+
+- name: "Create project: {{ cluster_type.name }}"
+  tower_project:
+    organization: "Cluster-as-a-Service"
+    name: "{{ cluster_type.name }}"
+    description: "{{ cluster_type.description }}"
+    scm_type: git
+    scm_url: "{{ cluster_type.git_url }}"
+    state: present
+    tower_verify_ssl: no
+  register: tower_project
+
+- name: "Wait for project to become available: {{ cluster_type.name }}"
+  shell: |
+    set -eo pipefail
+    tower-cli project status -f json {{ tower_project.id }} | \
+      jq -e '.status == "successful"'
+  register: tower_project_available
+  until: tower_project_available is succeeded
+  retries: 60
+  delay: 5
+
+- name: "Create job template: {{ cluster_type.name }}"
+  tower_job_template:
+    name: "{{ cluster_type.name }}"
+    job_type: run
+    project: "{{ cluster_type.name }}"
+    playbook: "{{ cluster_type.playbook }}"
+    # Ask for OpenStack credential
+    ask_credential: yes
+    # Ask for the inventory
+    ask_inventory: yes
+    tower_verify_ssl: no
+  register: tower_job_template
+
+- name: "Update job template survey: {{ cluster_type.name }}"
+  command: >
+    tower-cli job_template modify
+      --survey-enabled=true
+      --survey-spec={{ {"name": "", "description": "", "spec": cluster_type.survey_spec} | to_json | quote }}
+      {{ tower_job_template.id }}
+
+- name: "Create sample inventory: {{ cluster_type.name }}"
+  tower_inventory:
+    name: "{{ cluster_type.name }} Sample Inventory"
+    organization: "Cluster-as-a-Service"
+    description: "Sample inventory for a {{ cluster_type.name }} cluster. Copy and modify as required."
+    variables: "{{ cluster_type.inventory_defaults }}"
+    tower_verify_ssl: no
+
+- name: "Add host definition to sample inventory: {{ cluster_type.name }}"
+  tower_host:
+    name: openstack
+    inventory: "{{ cluster_type.name }} Sample Inventory"
+    variables:
+      ansible_host: "127.0.0.1"
+      ansible_connection: local
+    tower_verify_ssl: no
