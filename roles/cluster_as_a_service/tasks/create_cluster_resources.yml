@@ -23,25 +23,43 @@
   retries: 60
   delay: 5
 
+# The tower_job_template module doesn't permit the setting of the instance group,
+# cloud credential or survey, so use the tower-cli directly for those
+# after initial creation
 - name: "Create job template: {{ cluster_type.name }}"
   tower_job_template:
     name: "{{ cluster_type.name }}"
     job_type: run
     project: "{{ cluster_type.name }}"
     playbook: "{{ cluster_type.playbook }}"
-    # Ask for OpenStack credential
-    ask_credential: yes
     # Ask for the inventory
     ask_inventory: yes
     tower_verify_ssl: no
-  register: tower_job_template
 
+- name: "Associate deploy user credential: {{ cluster_type.name }}"
+  command: >
+    tower-cli job_template associate_credential
+      --job-template={{ cluster_type.name | quote }}
+      --credential="Deploy User"
+
+# We are treating instance groups like queues - fixing the instance group
+# for Cluster-as-a-Service jobs allows us to suspend them in order to
+# perform maintenance on the AWX host itself using a dedicated instance
+# group that points to the same host
+- name: "Associate tower instance group: {{ cluster_type.name }}"
+  command: >
+    tower-cli job_template associate_ig
+      --job_template={{ cluster_type.name | quote }}
+      --instance_group=tower
+
+# The tower_job_template module also doesn't allow the setting of the survey spec,
+# so use the tower-cli directly for that as well
 - name: "Update job template survey: {{ cluster_type.name }}"
   command: >
     tower-cli job_template modify
+      --name={{ cluster_type.name | quote }}
       --survey-enabled=true
       --survey-spec={{ {"name": "", "description": "", "spec": cluster_type.survey_spec} | to_json | quote }}
-      {{ tower_job_template.id }}
 
 - name: "Create sample inventory: {{ cluster_type.name }}"
   tower_inventory:
@@ -51,7 +69,7 @@
     variables: "{{ cluster_type.inventory_defaults }}"
     tower_verify_ssl: no
 
-- name: "Add host definition to sample inventory: {{ cluster_type.name }}"
+- name: "Add openstack host to sample inventory: {{ cluster_type.name }}"
   tower_host:
     name: openstack
     inventory: "{{ cluster_type.name }} Sample Inventory"

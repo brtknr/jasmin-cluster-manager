@@ -26,32 +26,45 @@
     - { type: credential, name: "Demo Credential" }
     - { type: organization, name: "Default" }
 
-- name: Create JASMIN Tenancy User credential type
-  tower_credential_type:
-    name: "JASMIN Tenancy User"
-    kind: cloud
-    inputs:
-      fields:
-        - id: username
-          label: JASMIN Username
-        - id: password
-          label: JASMIN Password
-          secret: true
-      required: [username, password]
-    injectors:
-      env:
-        OS_AUTH_URL: "{{ openstack_auth_url }}"
-        OS_IDENTITY_API_VERSION: "{{ openstack_identity_api_version }}"
-        OS_PROJECT_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
-        OS_USER_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
-        OS_PROJECT_ID: "{{ openstack_project_id }}"
-        OS_USERNAME: "{{ '{{' }} username {{ '}}' }}"
-        OS_PASSWORD: "{{ '{{' }} password {{ '}}' }}"
-    tower_verify_ssl: no
-
 - name: Create Cluster-as-a-Service organisation
   tower_organization:
     name: "Cluster-as-a-Service"
+    tower_verify_ssl: no
+
+- name: Create cluster-admin user
+  tower_user:
+    username: cluster-admin
+    email: "admin@cluster.jasmin"
+    password: "{{ cluster_admin_password }}"
+    tower_verify_ssl: no
+
+# The tower_role module doesn't support the Inventory Admin role, so use tower-cli directly
+# The cluster admin has permission to:
+#   - View all objects in the Cluster-as-a-Service organization
+#   - Execute existing job templates from the Cluster-as-a-Service organisation
+#   - Create, update and delete inventories in the Cluster-as-a-Service organisation
+- name: Grant required roles to cluster-admin user
+  command: >
+    tower-cli role grant
+      --user "cluster-admin"
+      --organization "Cluster-as-a-Service"
+      --type {{ item | quote }}
+  with_items:
+    - auditor
+    - execute
+    - inventory_admin
+
+# The deployment credential belongs to the Cluster-as-a-Service organisation
+- name: Create deploy user credential
+  tower_credential:
+    name: "Deploy User"
+    organization: "Cluster-as-a-Service"
+    kind: openstack
+    host: "{{ openstack_auth_url }}"
+    domain: "{{ openstack_domain_name }}"
+    project: "{{ openstack_project_id }}"
+    username: "{{ cluster_deploy_username }}"
+    password: "{{ cluster_deploy_password }}"
     tower_verify_ssl: no
 
 - name: Create Cluster-as-a-Service resources
