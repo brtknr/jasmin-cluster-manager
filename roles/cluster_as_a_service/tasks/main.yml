@@ -62,7 +62,7 @@
     kind: openstack
     host: "{{ openstack_auth_url }}"
     domain: "{{ openstack_domain_name }}"
-    project: "{{ openstack_project_id }}"
+    project: "{{ openstack_project_name }}"
     username: "{{ cluster_deploy_username }}"
     password: "{{ cluster_deploy_password }}"
     tower_verify_ssl: no
