@@ -27,6 +27,15 @@ parameters:
     constraints:
       - custom_constraint: nova.keypair
 
+  deploy_username:
+    type: string
+    label: Username of OpenStack user for deployments
+
+  deploy_password:
+    type: string
+    hidden: true
+    label: Password of OpenStack user for deployment
+
   network:
     type: string
     label: Private network to use
@@ -45,6 +54,11 @@ parameters:
 
 resources:
   awx_admin_password:
+    type: OS::Heat::RandomString
+    properties:
+      length: 32
+
+  cluster_admin_password:
     type: OS::Heat::RandomString
     properties:
       length: 32
@@ -92,16 +106,22 @@ resources:
               ansible-galaxy install -f -r /opt/jasmin-cluster-manager/roles/requirements.yml
               ansible-playbook -i "127.0.0.1," -c local  \
                 -e "awx_admin_password=$awx_admin_password"  \
+                -e "cluster_admin_password=$cluster_admin_password"  \
                 -e "default_cluster_network=$cluster_network"  \
                 -e "default_cluster_keypair=$cluster_keypair"  \
+                -e "cluster_deploy_username=$cluster_deploy_username"  \
+                -e "cluster_deploy_password=$cluster_deploy_password"  \
                 -e "openstack_project_id=$project_id"  \
                 /opt/jasmin-cluster-manager/playbook.yml
               wc_notify --data-binary '{"status": "SUCCESS"}'
             } 2>&1 | tee /var/log/jasmin-cluster-manager.log
           params:
             $awx_admin_password: { get_attr: [awx_admin_password, value] }
+            $cluster_admin_password: { get_attr: [cluster_admin_password, value] }
             $cluster_network: { get_param: network }
             $cluster_keypair: { get_param: key_name }
+            $cluster_deploy_username: { get_param: deploy_username }
+            $cluster_deploy_password: { get_param: deploy_password }
             $project_id: { get_param: "OS::project_id" }
             wc_notify: { get_attr: [wait_handle, curl_cli] }
 
@@ -116,5 +136,5 @@ outputs:
   OS::stack_id:
     value: { get_resource: server }
 
-  awx_admin_password:
-    value: { get_attr: [awx_admin_password, value] }
+  cluster_admin_password:
+    value: { get_attr: [cluster_admin_password, value] }
