@@ -1,4 +1,5 @@
 # By default, target the JASMIN Cloud
 openstack_auth_url: "https://kataifi.sweet.jasmin.ac.uk/v3"
 openstack_identity_api_version: "3"
-openstack_domain_name: jasmin
+openstack_project_domain_name: jasmin
+openstack_user_domain_name: jasmin

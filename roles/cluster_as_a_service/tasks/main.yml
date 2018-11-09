@@ -26,6 +26,33 @@
     - { type: credential, name: "Demo Credential" }
     - { type: organization, name: "Default" }
 
+# We can easily get hold of the OpenStack project ID in stacks or via the metadata API
+# Project name is not so easy, but is required by the default OpenStack credential type
+# So create a new credential that uses project ID instead
+# While we're at it, we also fix the auth url, domain etc.
+- name: Create JASMIN Cloud User credential type
+  tower_credential_type:
+    name: "JASMIN Cloud User"
+    kind: cloud
+    inputs:
+      fields:
+        - id: username
+          label: JASMIN Username
+        - id: password
+          label: JASMIN Password
+          secret: true
+      required: [username, password]
+    injectors:
+      env:
+        OS_AUTH_URL: "{{ openstack_auth_url }}"
+        OS_IDENTITY_API_VERSION: "{{ openstack_identity_api_version }}"
+        OS_PROJECT_DOMAIN_NAME: "{{ openstack_project_domain_name }}"
+        OS_USER_DOMAIN_NAME: "{{ openstack_user_domain_name }}"
+        OS_PROJECT_ID: "{{ openstack_project_id }}"
+        OS_USERNAME: "{{ '{{' }} username {{ '}}' }}"
+        OS_PASSWORD: "{{ '{{' }} password {{ '}}' }}"
+    tower_verify_ssl: no
+
 - name: Create Cluster-as-a-Service organisation
   tower_organization:
     name: "Cluster-as-a-Service"
@@ -54,18 +81,15 @@
     - execute
     - inventory_admin
 
-# The deployment credential belongs to the Cluster-as-a-Service organisation
+# The tower_credential module does not support custom credential types, so use the tower-cli
 - name: Create deploy user credential
-  tower_credential:
-    name: "Deploy User"
-    organization: "Cluster-as-a-Service"
-    kind: openstack
-    host: "{{ openstack_auth_url }}"
-    domain: "{{ openstack_domain_name }}"
-    project: "{{ openstack_project_name }}"
-    username: "{{ cluster_deploy_username }}"
-    password: "{{ cluster_deploy_password }}"
-    tower_verify_ssl: no
+  command: >
+    tower-cli credential create
+      --name="Deploy User"
+      --organization="Cluster-as-a-Service"
+      --credential-type="JASMIN Cloud User"
+      --inputs={{ { "username": cluster_deploy_username, "password": cluster_deploy_password } | to_json | quote }}
+      --force-on-exists
 
 - name: Create Cluster-as-a-Service resources
   include_tasks: create_cluster_resources.yml
