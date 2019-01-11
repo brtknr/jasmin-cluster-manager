@@ -88,6 +88,17 @@
             no
           default: "no"
           required: true
+        - question_name: "Cluster State"
+          question_description: >
+            If set to present, the cluster will be created/updated.
+            If set to absent, the cluster will be destroyed.
+          variable: "cluster_state"
+          type: "multiplechoice"
+          choices: |
+            present
+            absent
+          default: "present"
+          required: true
       inventory_defaults:
         cluster_name: kubernetes
         cluster_network: "{{ default_cluster_network }}"
