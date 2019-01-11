@@ -10,6 +10,8 @@ parameters:
   image:
     type: string
     label: The image to use (must be CentOS 7)
+    # This is the ID of the current CentOS 7 image in the production JASMIN Cloud
+    default: d7df64a3-9b2e-4ff2-820f-4481671d1dcf
     constraints:
       - custom_constraint: glance.image
 
