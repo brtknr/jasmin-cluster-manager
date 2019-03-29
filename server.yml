@@ -88,7 +88,7 @@ resources:
               trap notify_error ERR
               # Run the Ansible playbook to configure
               yum install -y git ansible
-              git clone https://github.com/cedadev/jasmin-cluster-manager.git /opt/jasmin-cluster-manager
+              git clone -b readme https://github.com/brtknr/jasmin-cluster-manager.git /opt/jasmin-cluster-manager
               ansible-galaxy install -f -r /opt/jasmin-cluster-manager/roles/requirements.yml
               ansible-playbook -i "127.0.0.1," -c local  \
                 -e "awx_admin_password=$awx_admin_password"  \

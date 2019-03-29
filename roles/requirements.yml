@@ -1,5 +1,5 @@
 ---
 - name: jasmin.awx
   scm: git
-  src: https://github.com/cedadev/jasmin-awx-ansible.git
-  version: master
+  src: https://github.com/brtknr/jasmin-awx-ansible.git
+  version: patch-3
